@@ -71,49 +71,31 @@ pip install -e . --no-build-isolation
 
 ## Mathematical Formulation (RoPE)
 
-For a given head dimension $d$ and token position $m$, Rotary Position Embedding pairs adjacent feature coordinates $(x_{2i}, x_{2i+1})$ for $i \in \{0, 1, \dots, d/2 - 1\}$ and applies a 2D rotation in the complex plane with frequency:
+For a given head dimension `d` and token position `m`, Rotary Position Embedding pairs adjacent feature coordinates `(x_2i, x_2i+1)` for `i = 0, 1, ..., d/2 - 1` and applies a 2D rotation in the complex plane with frequency:
 
-$$
-\theta_i = \text{base}^{-2i/d}
-$$
+```
+θ_i = base^(-2i/d)
+```
 
-The forward rotation is:
+**Forward rotation:**
 
-$$
-\begin{pmatrix}
-\tilde{x}_{m,\,2i} \\
-\tilde{x}_{m,\,2i+1}
-\end{pmatrix}
-=
-\begin{pmatrix}
-\cos(m\theta_i) & -\sin(m\theta_i) \\
-\sin(m\theta_i) & \cos(m\theta_i)
-\end{pmatrix}
-\begin{pmatrix}
-x_{m,\,2i} \\
-x_{m,\,2i+1}
-\end{pmatrix}
-$$
+```
+⎡ x̃_(m,2i)   ⎤   ⎡ cos(mθ_i)  -sin(mθ_i) ⎤   ⎡ x_(m,2i)   ⎤
+⎢             ⎥ = ⎢                       ⎥ · ⎢             ⎥
+⎣ x̃_(m,2i+1) ⎦   ⎣ sin(mθ_i)   cos(mθ_i) ⎦   ⎣ x_(m,2i+1) ⎦
+```
 
-During the backward pass, the exact analytical gradient with respect to the input is computed by applying the inverse rotation by $-m\theta_i$:
+**Backward pass (gradient w.r.t. input):**
 
-$$
-\begin{pmatrix}
-\dfrac{\partial \mathcal{L}}{\partial x_{m,\,2i}} \\[6pt]
-\dfrac{\partial \mathcal{L}}{\partial x_{m,\,2i+1}}
-\end{pmatrix}
-=
-\begin{pmatrix}
-\cos(m\theta_i) & \sin(m\theta_i) \\
--\sin(m\theta_i) & \cos(m\theta_i)
-\end{pmatrix}
-\begin{pmatrix}
-\dfrac{\partial \mathcal{L}}{\partial \tilde{x}_{m,\,2i}} \\[6pt]
-\dfrac{\partial \mathcal{L}}{\partial \tilde{x}_{m,\,2i+1}}
-\end{pmatrix}
-$$
+During the backward pass, the exact analytical gradient with respect to the input is computed by applying the inverse rotation by `-mθ_i`:
 
-Since the rotation matrix is orthogonal, its inverse equals its transpose — so the backward pass reuses the same $\cos$ / $\sin$ tables as the forward pass, just with the sign of the $\sin$ term flipped.
+```
+⎡ ∂L/∂x_(m,2i)   ⎤   ⎡ cos(mθ_i)   sin(mθ_i) ⎤   ⎡ ∂L/∂x̃_(m,2i)   ⎤
+⎢                 ⎥ = ⎢                       ⎥ · ⎢                 ⎥
+⎣ ∂L/∂x_(m,2i+1) ⎦   ⎣ -sin(mθ_i)  cos(mθ_i) ⎦   ⎣ ∂L/∂x̃_(m,2i+1) ⎦
+```
+
+Since the rotation matrix is orthogonal, its inverse equals its transpose — so the backward pass reuses the same `cos` / `sin` tables as the forward pass, just with the sign of the `sin` term flipped.
 
 ---
 
@@ -193,7 +175,7 @@ next_token_q_rot = rope(next_token_q, seq_offset=128)
 
 ### 4. Stateless Functional API (`apply_rope`)
 
-If you manage your own custom precomputed `cos` and `sin` frequency tables (e.g., for YaRN, NTK-aware scaling, or custom position IDs) of shape $[S, d/2]$, use `apply_rope`:
+If you manage your own custom precomputed `cos` and `sin` frequency tables (e.g., for YaRN, NTK-aware scaling, or custom position IDs) of shape `[S, d/2]`, use `apply_rope`:
 
 ```python
 import torch
