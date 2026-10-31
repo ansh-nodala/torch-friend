@@ -56,7 +56,7 @@ long_description = readme_path.read_text(encoding="utf-8") if readme_path.exists
 
 setup(
     name="torch-friends",
-    version="1.0.0",
+    version="2.0.0",
     author="Ansh Raj",
     author_email="anshraj0000000001@gmail.com",
     description="Ultra-optimized C++/LibTorch Rotary Position Embedding (RoPE) for CPU and CUDA",
