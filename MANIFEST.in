@@ -1,0 +1,6 @@
+include CMakeLists.txt
+include README.md
+recursive-include include *.hpp *.h
+recursive-include src *.cpp *.cu
+recursive-include binding *.cpp
+recursive-include torch_tools *.pyi
