@@ -21,17 +21,31 @@ jobs:
           path: dist/*.tar.gz
 
   build_wheels:
-    name: Build wheels (${{ matrix.os }} / Py ${{ matrix.python }})
+    name: Build wheels (${{ matrix.name }} / Py ${{ matrix.python }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
-          # Linux x86_64
-          - os: ubuntu-latest
+          # 1. Linux CPU-only wheel
+          - name: linux-cpu
+            os: ubuntu-latest
             python: cp312
-          # Windows x86_64
-          - os: windows-latest
+            use_cuda: "OFF"
+            before_all: "pip install torch>=2.0 --index-url https://download.pytorch.org/whl/cpu"
+
+          # 2. Linux CUDA wheel (Using NVIDIA CUDA developer base image inside cibuildwheel)
+          - name: linux-cuda
+            os: ubuntu-latest
             python: cp312
+            use_cuda: "ON"
+            before_all: "pip install torch>=2.0 --index-url https://download.pytorch.org/whl/cu118"
+
+          # 3. Windows CPU/CUDA wheel
+          - name: windows
+            os: windows-latest
+            python: cp312
+            use_cuda: "OFF"
+            before_all: "pip install torch>=2.0"
 
     steps:
       - uses: actions/checkout@v4
@@ -41,14 +55,16 @@ jobs:
         env:
           CIBW_BUILD: "${{ matrix.python }}-*"
           CIBW_SKIP: "*-musllinux* pp* *win32* *mac*"
-          CIBW_BEFORE_ALL: "pip install torch>=2.0"
+          CIBW_BEFORE_ALL: "${{ matrix.before_all }}"
+          # Pass USE_CUDA flag dynamically from matrix
+          CIBW_ENVIRONMENT: "USE_CUDA=${{ matrix.use_cuda }}"
           CIBW_TEST_REQUIRES: "torch"
           CIBW_TEST_COMMAND: "python -c \"import torch; from torch_tools import RotaryEmbedding; rope = RotaryEmbedding(64); print('Smoke Test Passed!')\""
 
       - name: Upload wheel artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: artifact-wheel-${{ matrix.os }}-${{ matrix.python }}
+          name: artifact-wheel-${{ matrix.name }}-${{ matrix.python }}
           path: ./wheelhouse/*.whl
 
   upload_pypi:
