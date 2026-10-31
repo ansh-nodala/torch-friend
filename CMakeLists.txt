@@ -6,7 +6,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(MSVC)
-    add_compile_options(/O2 /fp:fast /arch:AVX2)
+    # Remove default debug flags (/RTC1) if present, and set Release flags safely
+    string(REGEX REPLACE "/RTC(su|[1s])" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+    add_compile_options(/O2 /fp:fast)
 else()
     add_compile_options(-O3 -march=native -ffast-math -Wall -Wextra -Wno-stringop-overflow -Wno-array-bounds)
 endif()
