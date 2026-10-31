@@ -6,7 +6,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(MSVC)
-    # Remove default debug flags (/RTC1) if present, and set Release flags safely
+    # Remove default debug runtime checks (/RTC1, /RTCs, /RTCu) because they conflict
+    # with the optimization flags used below on Windows builds.
+    string(REGEX REPLACE "/RTC(su|[1s])" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+    string(REGEX REPLACE "/RTC(su|[1s])" "" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
+    string(REGEX REPLACE "/RTC(su|[1s])" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     string(REGEX REPLACE "/RTC(su|[1s])" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
     add_compile_options(/O2 /fp:fast)
 else()
@@ -53,7 +57,7 @@ add_library(torch_tools STATIC ${TORCH_TOOLS_SOURCES})
 set_target_properties(torch_tools PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(torch_tools PRIVATE ${TORCH_LIBRARIES})
 if(OpenMP_CXX_FOUND)
-    target_link_libraries(torch_tools PRIVATE OpenMP::OpenMP_CXX)
+target_link_libraries(torch_tools PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
 # 4. Python Shared Extension Module
@@ -66,7 +70,7 @@ target_link_libraries(torch_tools_cpp PRIVATE
     ${TORCH_PYTHON_LIBRARY}
 )
 if(OpenMP_CXX_FOUND)
-    target_link_libraries(torch_tools_cpp PRIVATE OpenMP::OpenMP_CXX)
+target_link_libraries(torch_tools_cpp PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
 # Default to .so for manual CMake builds, or use Python's PEP 3149 suffix when called from setup.py
