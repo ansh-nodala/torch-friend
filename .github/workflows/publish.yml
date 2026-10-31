@@ -26,21 +26,21 @@ jobs:
     strategy:
       matrix:
         include:
-          # 1. Linux CPU-only Wheel
+          # 1. Linux CPU-only wheel
           - name: linux-cpu
             os: ubuntu-latest
             python: cp312
             use_cuda: "OFF"
             before_all: "pip install torch>=2.0 --index-url https://download.pytorch.org/whl/cpu"
 
-          # 2. Linux CUDA Wheel (Using NVIDIA CUDA 12.1 Development container)
+          # 2. Linux CUDA (GPU) wheel - using NVIDIA devel container image with toolkit
           - name: linux-cuda
             os: ubuntu-latest
             python: cp312
             use_cuda: "ON"
             before_all: "pip install torch>=2.0 --index-url https://download.pytorch.org/whl/cu121"
 
-          # 3. Windows Wheel (CPU / CUDA compatible via PyTorch libs)
+          # 3. Windows wheel
           - name: windows
             os: windows-latest
             python: cp312
@@ -50,8 +50,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # For Linux CUDA build, use NVIDIA's official container image via cibuildwheel
-      - name: Set manylinux image for CUDA
+      # Agar CUDA build hai, toh NVIDIA ka official CUDA development container use karo jisme nvcc hota hai
+      - name: Set CUDA Container for Linux
         if: matrix.use_cuda == 'ON'
         run: |
           echo "CIBW_MANYLINUX_X86_64_IMAGE=nvidia/cuda:12.1.0-devel-ubuntu22.04" >> $GITHUB_ENV
