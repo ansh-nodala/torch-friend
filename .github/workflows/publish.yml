@@ -26,21 +26,21 @@ jobs:
     strategy:
       matrix:
         include:
-          # 1. Linux CPU-only wheel
+          # 1. Linux CPU-only Wheel
           - name: linux-cpu
             os: ubuntu-latest
             python: cp312
             use_cuda: "OFF"
             before_all: "pip install torch>=2.0 --index-url https://download.pytorch.org/whl/cpu"
 
-          # 2. Linux CUDA wheel (Using NVIDIA CUDA developer base image inside cibuildwheel)
+          # 2. Linux CUDA Wheel (Using NVIDIA CUDA 12.1 Development container)
           - name: linux-cuda
             os: ubuntu-latest
             python: cp312
             use_cuda: "ON"
-            before_all: "pip install torch>=2.0 --index-url https://download.pytorch.org/whl/cu118"
+            before_all: "pip install torch>=2.0 --index-url https://download.pytorch.org/whl/cu121"
 
-          # 3. Windows CPU/CUDA wheel
+          # 3. Windows Wheel (CPU / CUDA compatible via PyTorch libs)
           - name: windows
             os: windows-latest
             python: cp312
@@ -50,13 +50,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # For Linux CUDA build, use NVIDIA's official container image via cibuildwheel
+      - name: Set manylinux image for CUDA
+        if: matrix.use_cuda == 'ON'
+        run: |
+          echo "CIBW_MANYLINUX_X86_64_IMAGE=nvidia/cuda:12.1.0-devel-ubuntu22.04" >> $GITHUB_ENV
+
       - name: Build wheels via cibuildwheel
         uses: pypa/cibuildwheel@v2.21.3
         env:
           CIBW_BUILD: "${{ matrix.python }}-*"
           CIBW_SKIP: "*-musllinux* pp* *win32* *mac*"
           CIBW_BEFORE_ALL: "${{ matrix.before_all }}"
-          # Pass USE_CUDA flag dynamically from matrix
           CIBW_ENVIRONMENT: "USE_CUDA=${{ matrix.use_cuda }}"
           CIBW_TEST_REQUIRES: "torch"
           CIBW_TEST_COMMAND: "python -c \"import torch; from torch_tools import RotaryEmbedding; rope = RotaryEmbedding(64); print('Smoke Test Passed!')\""
