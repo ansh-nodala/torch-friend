@@ -15,6 +15,12 @@ else()
 endif()
 
 # 1. Find Torch and Python3
+# Agar system me CUDA requested hai ya libraries milti hain
+if(USE_CUDA)
+    enable_language(CUDA)
+    find_package(CUDAToolkit REQUIRED)
+endif()
+
 find_package(Torch REQUIRED)
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 find_package(OpenMP REQUIRED)
