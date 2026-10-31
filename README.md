@@ -1,4 +1,4 @@
-# ⚡ torch-tools
+# torch-friend
 
 **High-Performance C++20, OpenMP, and CUDA Extensions for PyTorch**
 
@@ -7,28 +7,38 @@
 [![PyTorch](https://img.shields.io/badge/PyTorch-%3E%3D2.0-EE4C2C.svg?logo=pytorch)](https://pytorch.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-`torch-tools` is a native C++/LibTorch operator library built to accelerate modern Deep Learning and Transformer workloads in PyTorch. Instead of relying on memory-bound Python operations, `torch-tools` executes fused kernels directly in C++20 (using OpenMP multithreading and SIMD vectorization on CPU) and custom CUDA kernels on NVIDIA GPUs.
+`torch-friend` is a native C++/LibTorch operator library built by Ansh Raj to accelerate deep learning and Transformer workloads in PyTorch. Instead of relying on memory-bound Python loops and dynamic dispatch overheads, `torch-friend` executes fused kernels directly in C++20 (leveraging OpenMP multithreading and SIMD vectorization on CPUs) and custom CUDA kernels on NVIDIA GPUs.
 
-> **📢 Project Status:** **Rotary Position Embedding (RoPE)** is 100% complete, tested, and production-ready! `torch-tools` is an actively growing ecosystem—many more custom C++/CUDA neural network primitives, fused normalization layers, and PyTorch utilities are on the way.
+> **Project Status:** Rotary Position Embedding (RoPE) is 100% complete, fully tested, and production-ready. `torch-friend` is an actively growing systems engineering project—bringing more custom C++/CUDA neural network primitives and low-level optimizations to PyTorch.
 
 ---
 
-## ✨ Key Highlights
+## About the Author
 
-- **Zero-Overhead C++20 & LibTorch Backend:** Directly binds to PyTorch tensors via `pybind11` without unnecessary memory copies.
-- **Full Autograd Support:** Custom C++ forward and backward passes (`torch::autograd::Function`) for seamless end-to-end training.
-- **Multi-Threaded CPU Execution:** Parallelized with OpenMP and compiled with `-O3 -march=native -ffast-math` for maximum SIMD throughput on CPU.
-- **Custom CUDA Kernels:** Optional hardware-accelerated GPU kernels for high-throughput training and inference.
-- **Multi-Precision Dispatch:** Native support for `float32`, `float16`, and `bfloat16` tensors.
+Built from first principles by **Ansh Raj**, a systems developer and machine learning practitioner from Bihar, India. `torch-friend` was created to bridge the gap between high-level PyTorch modeling and bare-metal hardware execution speed.
+
+- **GitHub:** [@ANSH-ind](https://github.com/ANSH-ind)
+- **Portfolio:** [anshstudios.pages.dev/portfolio](https://anshstudios.pages.dev/portfolio)
+- **Contact:** anshraj0000000001@gmail.com
+
+---
+
+## Key Highlights
+
+- **Zero-Overhead C++20 & LibTorch Backend:** Directly binds to PyTorch tensors via `pybind11` without unnecessary memory copies or slow Python overheads.
+- **Full Autograd Integration:** Custom C++ forward and backward passes (`torch::autograd::Function`) with analytical gradient calculation for seamless end-to-end model training.
+- **Multi-Threaded CPU Execution:** Parallelized with OpenMP and compiled with aggressive optimization flags (`-O3 -march=native -ffast-math`) for maximum SIMD throughput on CPU.
+- **Custom CUDA Kernels:** Optional hardware-accelerated GPU execution paths for high-throughput training and inference.
+- **Multi-Precision Support:** Native data-type agnosticism supporting `float32`, `float16`, and `bfloat16`.
 - **KV-Cache & GQA Ready:** Built-in `seq_offset` support for single-token autoregressive decoding and `forward_qk` for Grouped-Query Attention (GQA).
 
 ---
 
-## 📦 Installation
+## Installation
 
 ### 1. Install via PyPI (Recommended)
 
-You can install `torch-tools` directly using `pip`:
+You can install the stable release directly using `pip`:
 
 ```bash
 pip install torch-tools
@@ -59,7 +69,7 @@ pip install -e . --no-build-isolation
 
 ---
 
-## 🧮 Mathematical Formulation (RoPE)
+## Mathematical Formulation (RoPE)
 
 For a given head dimension $d$ and token position $m$, Rotary Position Embedding pairs adjacent feature coordinates $(x_{2i}, x_{2i+1})$ for $i \in \{0, 1, \dots, d/2 - 1\}$ and applies a 2D rotation in the complex plane with frequency $\theta_i = \text{base}^{-2i/d}$:
 
@@ -79,7 +89,7 @@ x_{m, 2i+1}
 \end{pmatrix}
 $$
 
-During the backward pass, the exact analytical gradient with respect to the input is computed by applying the transpose (inverse) rotation by $-m\theta_i$:
+During the backward pass, the exact analytical gradient with respect to the input is computed by applying the inverse rotation by $-m\theta_i$:
 
 $$
 \begin{pmatrix}
@@ -99,11 +109,13 @@ $$
 
 ---
 
-## 🚀 Usage Guide
+## Usage Guide
+
+*Note: Even though the repository is named `torch-friend`, the Python package imports cleanly as `torch_tools`.*
 
 ### 1. Standard `nn.Module` Interface (`RotaryEmbedding`)
 
-`RotaryEmbedding` is a drop-in `torch.nn.Module` that automatically computes, caches, and dynamically extends cosine and sine tables across devices and data types.
+`RotaryEmbedding` is a drop-in `torch.nn.Module` that automatically computes, caches, and dynamically extends cosine and sine frequency tables across devices and data types.
 
 ```python
 import torch
@@ -134,7 +146,7 @@ print("Input gradient norm:", x.grad.norm().item())
 
 ### 2. Simultaneous Query & Key Rotation (`forward_qk`)
 
-In Transformer attention layers (including Multi-Head Attention and Grouped-Query Attention where Query and Key head counts differ), use `forward_qk` to rotate both tensors cleanly:
+In Transformer attention layers (including Multi-Head Attention and Grouped-Query Attention where Query and Key head counts differ), use `forward_qk` to rotate both tensors cleanly in one pass:
 
 ```python
 import torch
@@ -173,7 +185,7 @@ next_token_q_rot = rope(next_token_q, seq_offset=128)
 
 ### 4. Stateless Functional API (`apply_rope`)
 
-If you manage your own custom precomputed `cos` and `sin` frequency caches (e.g., for YaRN, NTK-aware scaling, or custom position IDs) of shape $[S, d/2]$, use `apply_rope`:
+If you manage your own custom precomputed `cos` and `sin` frequency tables (e.g., for YaRN, NTK-aware scaling, or custom position IDs) of shape $[S, d/2]$, use `apply_rope`:
 
 ```python
 import torch
@@ -192,9 +204,9 @@ out.sum().backward()
 
 ---
 
-## 🗺️ Roadmap: Upcoming Tools in `torch-tools`
+## Roadmap: Upcoming Tools in `torch-friend`
 
-`torch-tools` is designed to be a complete, high-speed C++/CUDA operator suite for PyTorch. While **RoPE** is our first completed module, several new operators are currently under development and will be released in upcoming versions:
+`torch-friend` is designed to expand into a complete, high-speed C++/CUDA operator suite for PyTorch. While **Rotary Position Embedding (RoPE)** is the first completed core module, several new primitives are currently under development and will be released in upcoming versions:
 
 - [x] **Rotary Position Embedding (RoPE)** — *Completed & Production-Ready (CPU OpenMP + CUDA, Custom Autograd, GQA & KV-Cache support)*
 - [ ] **Fused RMSNorm** — *Ultra-fast Root Mean Square Layer Normalization with fused residual addition in C++/CUDA*
@@ -205,7 +217,7 @@ out.sum().backward()
 
 ---
 
-## 🛠️ Building Distributable Wheels Locally
+## Building Distributable Wheels Locally
 
 To build a standalone `.whl` package inside the `dist/` folder for deployment or uploading to PyPI via `twine`:
 
@@ -215,9 +227,6 @@ pip wheel . --no-deps --no-build-isolation -w dist/
 
 ---
 
-## 👤 Author & License
+## License
 
-- **Author:** Ansh Raj ([@ANSH-ind](https://github.com/ANSH-ind))
-- **Contact:** anshraj0000000001@gmail.com
-- **Copyright:** © 2026 Techgears - All Rights Reserved.
-- **License:** Released under the [MIT License](LICENSE).
+Released under the [MIT License](LICENSE). Copyright © 2026 Techgears - All Rights Reserved.
