@@ -6,15 +6,18 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(MSVC)
-    # Remove default debug runtime checks (/RTC1, /RTCs, /RTCu) because they conflict
-    # with the optimization flags used below on Windows builds.
-    string(REGEX REPLACE "/RTC(su|[1s])" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-    string(REGEX REPLACE "/RTC(su|[1s])" "" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
-    string(REGEX REPLACE "/RTC(su|[1s])" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    string(REGEX REPLACE "/RTC(su|[1s])" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+    # Strip inherited debug runtime-check flags (for example /RTC1) because they are
+    # incompatible with the optimized build flags used for Release wheels.
+    foreach(_flag_var IN ITEMS CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG)
+        string(REGEX REPLACE "/RTC(su|[1s])" "" "${_flag_var}" "${${_flag_var}}")
+        set("${_flag_var}" "${${_flag_var}}")
+    endforeach()
+
     add_compile_options(/O2 /fp:fast)
 else()
-    add_compile_options(-O3 -march=native -ffast-math -Wall -Wextra -Wno-stringop-overflow -Wno-array-bounds)
+    # Avoid -march=native for packaged wheels: it makes the binary architecture-specific
+    # instead of portable across the CI runner and general user machines.
+    add_compile_options(-O3 -Wall -Wextra -Wno-stringop-overflow -Wno-array-bounds)
 endif()
 
 option(USE_CUDA "Enable CUDA acceleration for NVIDIA GPUs" OFF)
