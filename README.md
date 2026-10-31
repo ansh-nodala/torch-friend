@@ -1,21 +1,21 @@
-# torch-friend
+# torch-friends
 
 **High-Performance C++20, OpenMP, and CUDA Extensions for PyTorch**
 
-[![PyPI Version](https://img.shields.io/badge/pypi-v1.0.0-blue.svg)](https://pypi.org/project/torch-tools/)
+[![PyPI Version](https://img.shields.io/badge/pypi-v1.0.0-blue.svg)](https://pypi.org/project/torch-friends/)
 [![C++20](https://img.shields.io/badge/C%2B%2B-20-00599C.svg?logo=c%2B%2B)](https://en.cppreference.com/w/cpp/20)
 [![PyTorch](https://img.shields.io/badge/PyTorch-%3E%3D2.0-EE4C2C.svg?logo=pytorch)](https://pytorch.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-`torch-friend` is a native C++/LibTorch operator library built by Ansh Raj to accelerate deep learning and Transformer workloads in PyTorch. Instead of relying on memory-bound Python loops and dynamic dispatch overheads, `torch-friend` executes fused kernels directly in C++20 (leveraging OpenMP multithreading and SIMD vectorization on CPUs) and custom CUDA kernels on NVIDIA GPUs.
+`torch-friends` is a native C++/LibTorch operator library built by Ansh Raj to accelerate deep learning and Transformer workloads in PyTorch. Instead of relying on memory-bound Python loops and dynamic dispatch overheads, `torch-friends` executes fused kernels directly in C++20 (leveraging OpenMP multithreading and SIMD vectorization on CPUs) and custom CUDA kernels on NVIDIA GPUs.
 
-> **Project Status:** Rotary Position Embedding (RoPE) is 100% complete, fully tested, and production-ready. `torch-friend` is an actively growing systems engineering project—bringing more custom C++/CUDA neural network primitives and low-level optimizations to PyTorch.
+> **Project Status:** Rotary Position Embedding (RoPE) is 100% complete, fully tested, and production-ready. `torch-friends` is an actively growing systems engineering project — bringing more custom C++/CUDA neural network primitives and low-level optimizations to PyTorch.
 
 ---
 
 ## About the Author
 
-Built from first principles by **Ansh Raj**, a systems developer and machine learning practitioner from Bihar, India. `torch-friend` was created to bridge the gap between high-level PyTorch modeling and bare-metal hardware execution speed.
+Built from first principles by **Ansh Raj**, a systems developer and machine learning practitioner from Bihar, India. `torch-friends` was created to bridge the gap between high-level PyTorch modeling and bare-metal hardware execution speed.
 
 - **GitHub:** [@ANSH-ind](https://github.com/ANSH-ind)
 - **Portfolio:** [anshstudios.pages.dev/portfolio](https://anshstudios.pages.dev/portfolio)
@@ -25,12 +25,12 @@ Built from first principles by **Ansh Raj**, a systems developer and machine lea
 
 ## Key Highlights
 
-- **Zero-Overhead C++20 & LibTorch Backend:** Directly binds to PyTorch tensors via `pybind11` without unnecessary memory copies or slow Python overheads.
-- **Full Autograd Integration:** Custom C++ forward and backward passes (`torch::autograd::Function`) with analytical gradient calculation for seamless end-to-end model training.
-- **Multi-Threaded CPU Execution:** Parallelized with OpenMP and compiled with aggressive optimization flags (`-O3 -march=native -ffast-math`) for maximum SIMD throughput on CPU.
-- **Custom CUDA Kernels:** Optional hardware-accelerated GPU execution paths for high-throughput training and inference.
-- **Multi-Precision Support:** Native data-type agnosticism supporting `float32`, `float16`, and `bfloat16`.
-- **KV-Cache & GQA Ready:** Built-in `seq_offset` support for single-token autoregressive decoding and `forward_qk` for Grouped-Query Attention (GQA).
+- **Zero-Overhead C++20 & LibTorch Backend** — Directly binds to PyTorch tensors via `pybind11` without unnecessary memory copies or slow Python overheads.
+- **Full Autograd Integration** — Custom C++ forward and backward passes (`torch::autograd::Function`) with analytical gradient calculation for seamless end-to-end model training.
+- **Multi-Threaded CPU Execution** — Parallelized with OpenMP and compiled with aggressive optimization flags (`-O3 -march=native -ffast-math`) for maximum SIMD throughput on CPU.
+- **Custom CUDA Kernels** — Optional hardware-accelerated GPU execution paths for high-throughput training and inference.
+- **Multi-Precision Support** — Native data-type agnosticism supporting `float32`, `float16`, and `bfloat16`.
+- **KV-Cache & GQA Ready** — Built-in `seq_offset` support for single-token autoregressive decoding and `forward_qk` for Grouped-Query Attention (GQA).
 
 ---
 
@@ -38,10 +38,8 @@ Built from first principles by **Ansh Raj**, a systems developer and machine lea
 
 ### 1. Install via PyPI (Recommended)
 
-You can install the stable release directly using `pip`:
-
 ```bash
-pip install torch-tools
+pip install torch-friends
 ```
 
 ### 2. Install from Source
@@ -67,16 +65,24 @@ USE_CUDA=ON pip install . --no-build-isolation
 pip install -e . --no-build-isolation
 ```
 
+> **Note:** The PyPI package is published as `torch-friends`, but the GitHub repository is named `torch-friend`. The Python import name in both cases is `torch_tools`.
+
 ---
 
 ## Mathematical Formulation (RoPE)
 
-For a given head dimension $d$ and token position $m$, Rotary Position Embedding pairs adjacent feature coordinates $(x_{2i}, x_{2i+1})$ for $i \in \{0, 1, \dots, d/2 - 1\}$ and applies a 2D rotation in the complex plane with frequency $\theta_i = \text{base}^{-2i/d}$:
+For a given head dimension $d$ and token position $m$, Rotary Position Embedding pairs adjacent feature coordinates $(x_{2i}, x_{2i+1})$ for $i \in \{0, 1, \dots, d/2 - 1\}$ and applies a 2D rotation in the complex plane with frequency:
+
+$$
+\theta_i = \text{base}^{-2i/d}
+$$
+
+The forward rotation is:
 
 $$
 \begin{pmatrix}
-\tilde{x}_{m, 2i} \\
-\tilde{x}_{m, 2i+1}
+\tilde{x}_{m,\,2i} \\
+\tilde{x}_{m,\,2i+1}
 \end{pmatrix}
 =
 \begin{pmatrix}
@@ -84,8 +90,8 @@ $$
 \sin(m\theta_i) & \cos(m\theta_i)
 \end{pmatrix}
 \begin{pmatrix}
-x_{m, 2i} \\
-x_{m, 2i+1}
+x_{m,\,2i} \\
+x_{m,\,2i+1}
 \end{pmatrix}
 $$
 
@@ -93,8 +99,8 @@ During the backward pass, the exact analytical gradient with respect to the inpu
 
 $$
 \begin{pmatrix}
-\frac{\partial \mathcal{L}}{\partial x_{m, 2i}} \\
-\frac{\partial \mathcal{L}}{\partial x_{m, 2i+1}}
+\dfrac{\partial \mathcal{L}}{\partial x_{m,\,2i}} \\[6pt]
+\dfrac{\partial \mathcal{L}}{\partial x_{m,\,2i+1}}
 \end{pmatrix}
 =
 \begin{pmatrix}
@@ -102,10 +108,12 @@ $$
 -\sin(m\theta_i) & \cos(m\theta_i)
 \end{pmatrix}
 \begin{pmatrix}
-\frac{\partial \mathcal{L}}{\partial \tilde{x}_{m, 2i}} \\
-\frac{\partial \mathcal{L}}{\partial \tilde{x}_{m, 2i+1}}
+\dfrac{\partial \mathcal{L}}{\partial \tilde{x}_{m,\,2i}} \\[6pt]
+\dfrac{\partial \mathcal{L}}{\partial \tilde{x}_{m,\,2i+1}}
 \end{pmatrix}
 $$
+
+Since the rotation matrix is orthogonal, its inverse equals its transpose — so the backward pass reuses the same $\cos$ / $\sin$ tables as the forward pass, just with the sign of the $\sin$ term flipped.
 
 ---
 
@@ -204,9 +212,9 @@ out.sum().backward()
 
 ---
 
-## Roadmap: Upcoming Tools in `torch-friend`
+## Roadmap: Upcoming Tools in `torch-friends`
 
-`torch-friend` is designed to expand into a complete, high-speed C++/CUDA operator suite for PyTorch. While **Rotary Position Embedding (RoPE)** is the first completed core module, several new primitives are currently under development and will be released in upcoming versions:
+`torch-friends` is designed to expand into a complete, high-speed C++/CUDA operator suite for PyTorch. While **Rotary Position Embedding (RoPE)** is the first completed core module, several new primitives are currently under development and will be released in upcoming versions:
 
 - [x] **Rotary Position Embedding (RoPE)** — *Completed & Production-Ready (CPU OpenMP + CUDA, Custom Autograd, GQA & KV-Cache support)*
 - [ ] **Fused RMSNorm** — *Ultra-fast Root Mean Square Layer Normalization with fused residual addition in C++/CUDA*
